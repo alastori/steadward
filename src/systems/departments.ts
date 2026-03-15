@@ -2,25 +2,30 @@ import type { GameState } from '../types/game-state';
 import type { Department } from '../types/departments';
 import type { BalanceConstants } from '../types/content';
 
-/** Apply passive health decay to departments without leaders */
+/** Materials generated per week by healthy departments */
+export const DEPT_MATERIALS_THRESHOLD = 70;
+export const DEPT_MATERIALS_PER_WEEK = 2;
+
+/** Apply passive health decay/recovery and calculate materials output */
 export function tickDepartmentHealth(
   departments: Department[],
   balance: BalanceConstants,
-): Department[] {
-  return departments.map((dept) => {
+): { departments: Department[]; materialsGenerated: number } {
+  let materialsGenerated = 0;
+  const updated = departments.map((dept) => {
     if (dept.assignedLeaderId) {
-      // Departments with leaders slowly recover
-      return {
-        ...dept,
-        health: Math.min(100, dept.health + 1),
-      };
+      const newHealth = Math.min(100, dept.health + 1);
+      if (newHealth >= DEPT_MATERIALS_THRESHOLD) {
+        materialsGenerated += DEPT_MATERIALS_PER_WEEK;
+      }
+      return { ...dept, health: newHealth };
     }
-    // Unattended departments decay
     return {
       ...dept,
       health: Math.max(0, dept.health - balance.resourceDecayRate),
     };
   });
+  return { departments: updated, materialsGenerated };
 }
 
 /** Get departments available for the current week (progressive unlock) */

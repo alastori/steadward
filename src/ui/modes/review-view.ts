@@ -140,8 +140,8 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
   nextBtn.addEventListener('click', () => {
     const leaderDefs = ctx.registry.getLeaders();
 
-    // Tick departments
-    const tickedDepts = tickDepartmentHealth(state.departments, balance);
+    // Tick departments (health + passive materials)
+    const { departments: tickedDepts, materialsGenerated } = tickDepartmentHealth(state.departments, balance);
 
     // Tick leaders (fatigue)
     let tickedLeaders = tickLeaderFatigue(state.leaders, leaderDefs, balance);
@@ -186,6 +186,11 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
           completedEffects = mergeEffects(completedEffects, def.outcomeDelegated.resourceEffects);
         }
       }
+    }
+
+    // Add passive materials from healthy departments
+    if (materialsGenerated > 0) {
+      completedEffects = mergeEffects(completedEffects, { materials: materialsGenerated });
     }
 
     // Clean up completed initiative IDs from departments

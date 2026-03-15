@@ -39,8 +39,8 @@ export function calculateDelegationQuality(
 export function getDelegationOutcome(
   quality: number,
 ): 'success' | 'partial' | 'failure' {
-  if (quality >= 0.70) return 'success';
-  if (quality >= 0.40) return 'partial';
+  if (quality >= 0.55) return 'success';
+  if (quality >= 0.30) return 'partial';
   return 'failure';
 }
 
