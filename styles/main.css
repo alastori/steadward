@@ -1,0 +1,114 @@
+@import './variables.css';
+
+/* Font faces */
+@font-face {
+  font-family: 'Inter';
+  src: url('/assets/fonts/Inter-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('/assets/fonts/PressStart2P-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/assets/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: --mode-current var(--transition-mode), --mode-current-bg var(--transition-mode);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-darkest);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* Skeleton layout */
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-6);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  letter-spacing: 0.05em;
+  color: var(--mode-current);
+  transition: color var(--transition-mode);
+}
+
+.subtitle {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5rem;
+  letter-spacing: 0.04em;
+  color: var(--mode-current);
+  margin-top: var(--space-3);
+  opacity: 0.7;
+  transition: color var(--transition-mode);
+}
+
+.content {
+  text-align: center;
+  background-color: var(--mode-current-bg);
+  border: 1px solid var(--bg-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  min-width: 320px;
+  transition: background-color var(--transition-mode);
+}
+
+.seed-display {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.tagline {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Steadward",
+  "short_name": "Steadward",
+  "description": "Coordinate. Delegate. Survive.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#0D1117",
+  "icons": [
+    {
+      "src": "/assets/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

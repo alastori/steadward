@@ -1,0 +1,102 @@
+/* Register custom properties for smooth CSS transitions */
+@property --mode-current {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #58A6FF;
+}
+
+@property --mode-current-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(88, 166, 255, 0.08);
+}
+
+:root {
+  /* Base palette */
+  --bg-darkest: #0D1117;
+  --bg-dark: #161B22;
+  --bg-medium: #21262D;
+  --bg-light: #30363D;
+  --bg-lighter: #484F58;
+
+  /* Text */
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --text-muted: #6E7681;
+  --text-on-accent: #FFFFFF;
+
+  /* Mode accents — default to observe */
+  --mode-current: var(--mode-observe);
+  --mode-current-bg: var(--mode-observe-bg);
+
+  --mode-observe: #58A6FF;
+  --mode-plan: #D2A8FF;
+  --mode-execute: #F0883E;
+  --mode-review: #7EE787;
+
+  --mode-observe-bg: rgba(88, 166, 255, 0.08);
+  --mode-plan-bg: rgba(210, 168, 255, 0.08);
+  --mode-execute-bg: rgba(240, 136, 62, 0.08);
+  --mode-review-bg: rgba(126, 231, 135, 0.08);
+
+  /* Resource colors */
+  --res-attention: #F0C000;
+  --res-materials: #DA6D28;
+  --res-trust: #56D4E8;
+  --res-clarity: #E6EDF3;
+  --res-resilience: #5EC269;
+  --res-knowledge: #C490FF;
+  --res-momentum: #FF7B72;
+
+  /* Department colors */
+  --dept-ops: #F0883E;
+  --dept-infra: #8B949E;
+  --dept-research: #D2A8FF;
+  --dept-external: #58A6FF;
+
+  /* Alert / urgency */
+  --alert-low: #8B949E;
+  --alert-medium: #F0C000;
+  --alert-high: #F85149;
+
+  /* Delta indicators */
+  --delta-positive: #7EE787;
+  --delta-negative: #F85149;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Transitions */
+  --transition-mode: 0.4s ease;
+}
+
+/* Mode overrides via data-mode attribute */
+/* Direct values (not var() references) so @property can interpolate transitions */
+[data-mode="observe"] {
+  --mode-current: #58A6FF;
+  --mode-current-bg: rgba(88, 166, 255, 0.08);
+}
+
+[data-mode="plan"] {
+  --mode-current: #D2A8FF;
+  --mode-current-bg: rgba(210, 168, 255, 0.08);
+}
+
+[data-mode="execute"] {
+  --mode-current: #F0883E;
+  --mode-current-bg: rgba(240, 136, 62, 0.08);
+}
+
+[data-mode="review"] {
+  --mode-current: #7EE787;
+  --mode-current-bg: rgba(126, 231, 135, 0.08);
+}
