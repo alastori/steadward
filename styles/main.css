@@ -129,7 +129,30 @@ body {
 .header-right {
   display: flex;
   align-items: center;
+  gap: var(--space-4);
 }
+
+.header-autonomy {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.autonomy-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.autonomy-value {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.autonomy--high { color: var(--delta-positive); }
+.autonomy--mid { color: var(--text-secondary); }
+.autonomy--low { color: var(--alert-medium); }
 
 .header-attention {
   display: flex;

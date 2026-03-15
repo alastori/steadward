@@ -61,7 +61,8 @@ export function getAvailableLeaders(
 
 /** Create initial leader state from definitions */
 export function createInitialLeaders(defs: ReadonlyArray<LeaderDefinition>): Leader[] {
-  const weekUnlock = [1, 1, 2, 3, 3]; // Progressive unlock schedule
+  // Maren W1, Osei W3, Fen W2, Rook W1, Lin W2
+  const weekUnlock = [1, 3, 2, 1, 2];
   return defs.map((def, i) => ({
     id: def.id,
     name: def.name,

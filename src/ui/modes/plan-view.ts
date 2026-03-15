@@ -2,6 +2,7 @@ import type { RenderContext } from '../renderer';
 import { getAvailableDepartments } from '../../systems/departments';
 import { getAvailableLeaders } from '../../systems/leaders';
 import { canStartInitiative, canAddInitiative } from '../../systems/initiatives';
+import { createSeededRandom } from '../../utils/random';
 
 export function renderPlanView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
@@ -66,13 +67,23 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
   // Already active initiative IDs
   const activeIds = new Set(state.activeInitiatives.map((i) => i.definitionId));
 
+  // Seed-based RNG for initiative selection — same seed+week = same offerings
+  const initRng = createSeededRandom(state.seed * 1000 + state.turn.week);
+
   for (const dept of departments) {
     const allDeptInits = registry.getInitiatives(dept.id);
-    // Gate initiatives by week tags: 'week-1' available in weeks 1-2, others unlock week 3+
-    const deptInits = allDeptInits.filter((init) => {
-      if (init.tags.includes('week-1')) return true; // Always available
-      return state.turn.week >= 3; // Other initiatives unlock at week 3
+    // Gate by week tags, then randomly select a subset for variety
+    const eligible = allDeptInits.filter((init) => {
+      // Already active initiatives are always shown
+      if (activeIds.has(init.id)) return true;
+      if (init.tags.includes('week-1')) return true;
+      return state.turn.week >= 3;
     });
+    // Show max 3 per department (plus any already active)
+    const activeForDept = eligible.filter((i) => activeIds.has(i.id));
+    const available = eligible.filter((i) => !activeIds.has(i.id));
+    const shuffled = initRng.shuffle(available);
+    const deptInits = [...activeForDept, ...shuffled.slice(0, 3)];
     const canAdd = canAddInitiative(state.activeInitiatives, dept.id);
     const deptLeader = dept.assignedLeaderId;
 

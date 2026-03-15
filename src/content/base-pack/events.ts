@@ -179,7 +179,7 @@ export const baseEvents: EventDefinition[] = [
     ],
     conditions: [
       { type: 'week_min', value: 2 },
-      { type: 'resource_below', target: 'resilience', value: 60 },
+      { type: 'resource_below', target: 'resilience', value: 80 },
     ],
     tags: ['base'],
   },
@@ -298,10 +298,7 @@ export const baseEvents: EventDefinition[] = [
         resourceEffects: { trust: -2, resilience: 2, momentum: -3, clarity: 2 },
       },
     ],
-    conditions: [
-      { type: 'week_min', value: 3 },
-      { type: 'department_health_below', target: 'infrastructure', value: 70 },
-    ],
+    conditions: [{ type: 'week_min', value: 3 }],
     tags: ['base'],
   },
 ];
