@@ -631,35 +631,148 @@ body {
 }
 
 /* ============================================
-   Outcome Overlay
+   Outcome Screen
    ============================================ */
-.outcome-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(13, 17, 23, 0.9);
+.outcome-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  min-height: 100vh;
 }
 
-.outcome-card {
+.outcome-screen-card {
   background: var(--bg-dark);
   border: 1px solid var(--bg-light);
   border-radius: var(--radius-md);
   padding: var(--space-8);
   text-align: center;
+  max-width: 480px;
 }
 
-.outcome-title {
+.outcome-screen-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
+  margin-bottom: var(--space-6);
+}
+
+.outcome--win { color: var(--delta-positive); }
+.outcome--loss { color: var(--delta-negative); }
+
+.outcome-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.outcome-stat {
+  text-align: center;
+}
+
+.outcome-stat-label {
+  display: block;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-1);
+}
+
+.outcome-stat-value {
+  font-weight: 700;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.outcome-seed {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.outcome-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+/* ============================================
+   Demo Wall
+   ============================================ */
+.demo-wall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.demo-wall-content {
+  background: var(--bg-dark);
+  border: 1px solid var(--bg-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  text-align: center;
+  max-width: 480px;
+}
+
+.demo-wall-title {
   font-family: 'Press Start 2P', monospace;
   font-size: 1rem;
   color: var(--mode-current);
   margin-bottom: var(--space-4);
 }
 
-.outcome-detail {
+.demo-wall-body {
   color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: var(--space-6);
+}
+
+.demo-wall-email {
+  margin-bottom: var(--space-6);
+}
+
+.demo-wall-email-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.demo-wall-form {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.demo-wall-input {
+  flex: 1;
+  background: var(--bg-medium);
+  border: 1px solid var(--bg-light);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  font: 400 0.8125rem 'Inter', sans-serif;
+}
+
+.demo-wall-input::placeholder {
+  color: var(--text-muted);
+}
+
+.demo-wall-status {
+  font-size: 0.75rem;
+  color: var(--delta-positive);
+  margin-top: var(--space-2);
+}
+
+.demo-wall-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.demo-wall-cta {
+  text-decoration: none;
+  display: inline-block;
 }
 
 /* ============================================
