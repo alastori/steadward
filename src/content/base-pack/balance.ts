@@ -1,0 +1,25 @@
+import type { BalanceConstants } from '../../types/content';
+
+export const BASE_BALANCE: BalanceConstants = {
+  baseAttentionBudget: 10,
+  clarityAttentionModifier: 0.02, // +/- 0.02 per clarity point from 50
+  resourceDecayRate: 2, // per-week passive decay for unattended departments
+  fatiguePerWeek: 10, // base fatigue gain per assigned week
+  trustGrowthBase: 3, // base trust gain per successful delegation
+  delegationQualityWeights: {
+    judgment: 0.3,
+    reliability: 0.25,
+    speed: 0.15,
+    adaptability: 0.15,
+    communication: 0.1,
+    riskTolerance: 0.05,
+  },
+  autonomyScoreWeights: {
+    delegationRate: 0.3,
+    leaderTrust: 0.25,
+    resourceStability: 0.2,
+    departmentHealth: 0.15,
+    initiativeSuccess: 0.1,
+  },
+  demoWeekLimit: 5,
+};
