@@ -19,6 +19,12 @@ export type Action =
       completedInitiativeEffects: Partial<Resources>;
       drawnEvents: ActiveEvent[];
       newFiredEventIds: string[];
+      completedInitiatives: Array<{
+        definitionId: string;
+        leaderId: string | null;
+        overseen: boolean;
+        outcome: 'success' | 'partial' | 'failure' | 'overseen';
+      }>;
       newAttentionBudget: number;
       autonomyScore: number;
       autonomyStreakWeeks: number;

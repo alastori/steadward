@@ -19,6 +19,7 @@ export function renderHeaderBar(container: HTMLElement, state: GameState): void 
       <span class="header-phase">${state.turn.phase.toUpperCase()}</span>
     </div>
     <div class="header-right">
+      <button class="header-save-btn" type="button" title="Save / Load">&#9776;</button>
       <span class="header-autonomy ${autonomyClass}" title="Autonomy score — sustain 80+ for 3 weeks to win">
         <span class="autonomy-label">AUT</span>
         <span class="autonomy-value">${state.autonomyScore}</span>

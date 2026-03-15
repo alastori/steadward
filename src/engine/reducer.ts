@@ -102,6 +102,7 @@ export function rootReducer(state: GameState, action: Action): GameState {
         activeInitiatives: action.activeInitiatives,
         activeEvents: action.drawnEvents,
         firedEventIds: action.newFiredEventIds,
+        lastCompletedInitiatives: action.completedInitiatives,
         resources: applyResourceEffects(state.resources, action.completedInitiativeEffects),
         attention: {
           budget: action.newAttentionBudget,

@@ -16,6 +16,7 @@ function createTestState(): GameState {
     activeInitiatives: [],
     activeEvents: [],
     firedEventIds: [],
+    lastCompletedInitiatives: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,

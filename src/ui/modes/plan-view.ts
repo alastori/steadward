@@ -115,6 +115,8 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
     const deptInits = [...activeForDept, ...shuffled.slice(0, 3)];
     const canAdd = canAddInitiative(state.activeInitiatives, dept.id);
     const deptLeader = dept.assignedLeaderId;
+    // Low department health increases oversee cost
+    const healthPenalty = dept.health < 40 ? 1 : 0;
 
     for (const init of deptInits) {
       const isActive = activeIds.has(init.id);
@@ -136,10 +138,12 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
           .join(', ');
         statusHtml = `<span class="init-status init-status--blocked">Need: ${missing}</span>`;
       } else {
+        const overseeCost = init.attentionCost + healthPenalty;
+        const penaltyNote = healthPenalty > 0 ? ' +1 low health' : '';
         statusHtml = `
           <div class="init-actions">
-            <button class="btn-primary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="true" data-cost="${init.attentionCost}">
-              Oversee (${init.attentionCost} ATT)
+            <button class="btn-primary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="true" data-cost="${overseeCost}">
+              Oversee (${overseeCost} ATT${penaltyNote})
             </button>
             <button class="btn-secondary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="false" data-leader="${deptLeader || ''}" data-cost="0">
               Delegate${deptLeader ? '' : ' (no leader)'}

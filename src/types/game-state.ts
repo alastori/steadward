@@ -21,6 +21,12 @@ export interface GameState {
   activeInitiatives: ActiveInitiative[];
   activeEvents: ActiveEvent[];
   firedEventIds: string[];
+  lastCompletedInitiatives: Array<{
+    definitionId: string;
+    leaderId: string | null;
+    overseen: boolean;
+    outcome: 'success' | 'partial' | 'failure' | 'overseen';
+  }>;
   autonomyScore: number;
   autonomyStreakWeeks: number;
   outcome: 'win' | 'loss' | null;

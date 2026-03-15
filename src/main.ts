@@ -11,6 +11,7 @@ import { createInitialLeaders } from './systems/leaders';
 import { renderTitleView } from './ui/renderer';
 import { wireAnalytics } from './analytics/telemetry';
 import { wireAudio } from './audio/audio-manager';
+import { setupDebugPanel } from './ui/components/debug-panel';
 import type { GameState } from './types/game-state';
 
 const config = parseGameConfig();
@@ -40,6 +41,7 @@ function createInitialState(): GameState {
     activeInitiatives: [],
     activeEvents: [],
     firedEventIds: [],
+    lastCompletedInitiatives: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,
@@ -50,13 +52,10 @@ function createInitialState(): GameState {
 // Initialize store
 const store = createGameStore(createInitialState(), rootReducer);
 
-// Wire analytics + audio
+// Wire analytics + audio + debug
 wireAnalytics(store);
 wireAudio(store);
-
-// Debug access
-(window as unknown as Record<string, unknown>).__gameState = () => store.getState();
-(window as unknown as Record<string, unknown>).__actionLog = () => store.getActionLog();
+setupDebugPanel(store);
 
 // Mount UI
 const app = document.getElementById('app');

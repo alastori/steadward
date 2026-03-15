@@ -132,6 +132,75 @@ body {
   gap: var(--space-4);
 }
 
+.header-save-btn {
+  background: transparent;
+  border: 1px solid var(--bg-light);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.header-save-btn:hover { color: var(--text-primary); border-color: var(--mode-current); }
+
+.save-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 17, 23, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.save-panel {
+  background: var(--bg-dark);
+  border: 1px solid var(--bg-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.save-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.save-slot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--bg-light);
+  font-size: 0.8125rem;
+}
+
+.save-slot-name { font-weight: 600; min-width: 80px; }
+.save-slot-info { flex: 1; color: var(--text-secondary); }
+.save-slot-date { color: var(--text-muted); font-size: 0.6875rem; }
+
+.save-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+.save-export {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.save-status {
+  font-size: 0.75rem;
+  color: var(--delta-positive);
+  min-height: 1.2em;
+}
+
 .header-autonomy {
   display: flex;
   align-items: center;
@@ -787,6 +856,40 @@ body {
   display: block;
   margin-left: auto;
   margin-right: auto;
+}
+
+.review-completed-card {
+  background: var(--bg-dark);
+  border: 1px solid var(--bg-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.review-completed-card.outcome--success { border-left: 3px solid var(--delta-positive); }
+.review-completed-card.outcome--partial { border-left: 3px solid var(--alert-medium); }
+.review-completed-card.outcome--failure { border-left: 3px solid var(--alert-high); }
+
+.completed-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+}
+
+.completed-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.completed-outcome {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.completed-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .review-outcome {

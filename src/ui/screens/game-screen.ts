@@ -1,6 +1,7 @@
 import type { RenderContext } from '../renderer';
 import { renderHeaderBar } from '../components/header-bar';
 import { renderResourcePanel } from '../components/resource-panel';
+import { renderSaveLoadPanel } from '../components/save-load';
 import { renderObserveView } from '../modes/observe-view';
 import { renderPlanView } from '../modes/plan-view';
 import { renderExecuteView } from '../modes/execute-view';
@@ -12,6 +13,16 @@ export function renderGameScreen(ctx: RenderContext): void {
 
   // Header
   renderHeaderBar(ctx.app, state);
+
+  // Wire save button
+  const saveBtn = ctx.app.querySelector('.header-save-btn');
+  saveBtn?.addEventListener('click', () => {
+    renderSaveLoadPanel(document.body, ctx.store, () => {
+      // Remove overlay and re-render on close
+      const overlay = document.querySelector('.save-overlay');
+      overlay?.remove();
+    });
+  });
 
   // Main layout
   const layout = document.createElement('div');

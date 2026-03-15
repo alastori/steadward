@@ -73,6 +73,43 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     view.appendChild(deltaSection);
   }
 
+  // Completed initiative outcomes with narrative text
+  if (state.lastCompletedInitiatives.length > 0) {
+    const compSection = document.createElement('section');
+    compSection.className = 'review-section';
+    compSection.innerHTML = `<h2 class="section-heading">Completed This Week</h2>`;
+    for (const comp of state.lastCompletedInitiatives) {
+      const def = ctx.registry.getInitiative(comp.definitionId);
+      if (!def) continue;
+      const leader = comp.leaderId
+        ? state.leaders.find((l) => l.id === comp.leaderId)
+        : null;
+      const outcomeText = comp.overseen
+        ? def.outcomeOverseen.description
+        : comp.outcome === 'success'
+          ? def.outcomeDelegated.description
+          : comp.outcome === 'partial' && def.outcomeDelegated.descriptionPartial
+            ? def.outcomeDelegated.descriptionPartial
+            : comp.outcome === 'failure' && def.outcomeDelegated.descriptionFailure
+              ? def.outcomeDelegated.descriptionFailure
+              : def.outcomeDelegated.description;
+      const outcomeLabel = comp.overseen ? 'Overseen' : comp.outcome.charAt(0).toUpperCase() + comp.outcome.slice(1);
+      const outcomeClass = comp.outcome === 'success' || comp.overseen ? 'outcome--success' : comp.outcome === 'failure' ? 'outcome--failure' : 'outcome--partial';
+
+      const card = document.createElement('div');
+      card.className = `review-completed-card ${outcomeClass}`;
+      card.innerHTML = `
+        <div class="completed-header">
+          <span class="completed-name">${def.name}</span>
+          <span class="completed-outcome">${outcomeLabel}${leader ? ` — ${leader.name}` : ''}</span>
+        </div>
+        <p class="completed-text">${outcomeText}</p>
+      `;
+      compSection.appendChild(card);
+    }
+    view.appendChild(compSection);
+  }
+
   // Department summary
   const deptSection = document.createElement('section');
   deptSection.className = 'review-section';
@@ -139,14 +176,26 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     // Tick initiatives and resolve completed ones
     const { active: remainingInits, completed } = tickInitiatives(state.activeInitiatives);
     let completedEffects: Partial<Resources> = {};
+    const completedRecords: Array<{
+      definitionId: string;
+      leaderId: string | null;
+      overseen: boolean;
+      outcome: 'success' | 'partial' | 'failure' | 'overseen';
+    }> = [];
+
     for (const init of completed) {
       const def = ctx.registry.getInitiative(init.definitionId);
       if (!def) continue;
 
       if (init.overseen) {
         completedEffects = mergeEffects(completedEffects, def.outcomeOverseen.resourceEffects);
+        completedRecords.push({
+          definitionId: init.definitionId,
+          leaderId: null,
+          overseen: true,
+          outcome: 'overseen',
+        });
       } else {
-        // Delegation quality determines outcome
         const leader = tickedLeaders.find((l) => l.id === init.assignedLeaderId);
         const leaderDef = leaderDefs.find((d) => d.id === init.assignedLeaderId);
         if (leader && leaderDef) {
@@ -156,7 +205,6 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
             leader.trust,
             balance.delegationQualityWeights,
           );
-          // Apply decision style variance (seeded per leader+initiative+week)
           const varianceRng = createSeededRandom(
             state.seed + state.turn.week * 100 +
             leader.id.charCodeAt(leader.id.length - 1) +
@@ -173,8 +221,13 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
             outcome,
           );
           completedEffects = mergeEffects(completedEffects, scaled as Partial<Resources>);
+          completedRecords.push({
+            definitionId: init.definitionId,
+            leaderId: init.assignedLeaderId,
+            overseen: false,
+            outcome,
+          });
 
-          // Trust growth/decay based on delegation outcome
           tickedLeaders = tickedLeaders.map((l) => {
             if (l.id !== init.assignedLeaderId) return l;
             if (outcome === 'success' || outcome === 'partial') {
@@ -185,6 +238,12 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
           });
         } else {
           completedEffects = mergeEffects(completedEffects, def.outcomeDelegated.resourceEffects);
+          completedRecords.push({
+            definitionId: init.definitionId,
+            leaderId: init.assignedLeaderId,
+            overseen: false,
+            outcome: 'partial',
+          });
         }
       }
     }
@@ -230,6 +289,7 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
       completedInitiativeEffects: completedEffects,
       drawnEvents,
       newFiredEventIds,
+      completedInitiatives: completedRecords,
       newAttentionBudget: newBudget,
       autonomyScore: autonomy,
       autonomyStreakWeeks: autonomy >= 80 ? newStreak : 0,
