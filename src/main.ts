@@ -1,8 +1,19 @@
 import '../styles/main.css';
 import { parseGameConfig } from './utils/url';
-import { GamePhase, PHASE_ORDER } from './types/modes';
+import { GamePhase } from './types/modes';
+import { DEFAULT_RESOURCES } from './types/resources';
+import { createGameStore } from './engine/game-store';
+import { rootReducer } from './engine/reducer';
+import { createContentRegistry } from './content/registry';
+import { basePack } from './content/index';
+import { createInitialDepartments } from './systems/departments';
+import { createInitialLeaders } from './systems/leaders';
+import { renderTitleView } from './ui/renderer';
+import { wireAnalytics } from './analytics/telemetry';
+import type { GameState } from './types/game-state';
 
 const config = parseGameConfig();
+const seed = config.seed ? parseInt(config.seed, 10) || Date.now() : Date.now();
 
 if (config.seed) {
   console.log(`Seed: ${config.seed}`);
@@ -11,44 +22,40 @@ if (config.challenge) {
   console.log(`Challenge: ${config.challenge}`);
 }
 
-function setMode(phase: GamePhase): void {
-  document.documentElement.setAttribute('data-mode', phase);
+// Set up content registry
+const registry = createContentRegistry();
+registry.registerPack(basePack);
+const balance = registry.getBalance();
+
+// Create initial game state
+function createInitialState(): GameState {
+  return {
+    turn: { week: 1, phase: GamePhase.Observe, phaseIndex: 0 },
+    resources: { ...DEFAULT_RESOURCES },
+    departments: createInitialDepartments(),
+    leaders: createInitialLeaders(registry.getLeaders()),
+    attention: { budget: balance.baseAttentionBudget, remaining: balance.baseAttentionBudget },
+    activeInitiatives: [],
+    activeEvents: [],
+    autonomyScore: 0,
+    autonomyStreakWeeks: 0,
+    outcome: null,
+    seed,
+  };
 }
 
-function render(): void {
-  const app = document.getElementById('app');
-  if (!app) return;
+// Initialize store
+const store = createGameStore(createInitialState(), rootReducer);
 
-  const seedInfo = config.seed ? `<p class="seed-display">Seed: ${config.seed}</p>` : '';
-  const challengeInfo = config.challenge
-    ? `<p class="seed-display">Challenge: ${config.challenge}</p>`
-    : '';
+// Wire analytics
+wireAnalytics(store);
 
-  app.innerHTML = `
-    <header class="header">
-      <h1 class="title">STEADWARD</h1>
-      <p class="subtitle" id="mode-label">OBSERVE</p>
-    </header>
-    <main class="content">
-      ${seedInfo}
-      ${challengeInfo}
-      <p class="tagline">Coordinate. Delegate. Survive.</p>
-    </main>
-  `;
+// Debug access
+(window as unknown as Record<string, unknown>).__gameState = () => store.getState();
+(window as unknown as Record<string, unknown>).__actionLog = () => store.getActionLog();
+
+// Mount UI
+const app = document.getElementById('app');
+if (app) {
+  renderTitleView({ store, registry, app });
 }
-
-// Set initial mode and render
-setMode(GamePhase.Observe);
-render();
-
-// Cycle modes every 3 seconds (temporary demo)
-let phaseIndex = 0;
-setInterval(() => {
-  phaseIndex = (phaseIndex + 1) % PHASE_ORDER.length;
-  const phase = PHASE_ORDER[phaseIndex];
-  setMode(phase);
-  const label = document.getElementById('mode-label');
-  if (label) {
-    label.textContent = phase.toUpperCase();
-  }
-}, 3000);
