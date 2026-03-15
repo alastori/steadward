@@ -1,4 +1,5 @@
 import type { RenderContext } from '../renderer';
+import { canSpendAttention } from '../../systems/attention';
 
 export function renderExecuteView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
@@ -16,12 +17,15 @@ export function renderExecuteView(container: HTMLElement, ctx: RenderContext): v
   } else {
     for (const init of state.activeInitiatives) {
       const def = ctx.registry.getInitiative(init.definitionId);
+      const leader = init.assignedLeaderId
+        ? state.leaders.find((l) => l.id === init.assignedLeaderId)
+        : null;
       const card = document.createElement('div');
       card.className = 'exec-init-card';
       card.innerHTML = `
         <span class="exec-init-name">${def?.name ?? init.definitionId}</span>
         <span class="exec-init-progress">${init.weeksRemaining}w remaining</span>
-        <span class="exec-init-status">${init.overseen ? 'Overseen' : 'Delegated'}</span>
+        <span class="exec-init-status">${init.overseen ? 'Overseen' : leader ? `Delegated to ${leader.name}` : 'Delegated'}</span>
       `;
       initSection.appendChild(card);
     }
@@ -42,9 +46,10 @@ export function renderExecuteView(container: HTMLElement, ctx: RenderContext): v
       card.className = `event-card event-card--${def.urgency}`;
 
       if (event.resolved) {
+        const chosenChoice = event.chosenOptionIndex !== null ? def.choices[event.chosenOptionIndex] : null;
         card.innerHTML = `
           <span class="event-name">${def.name}</span>
-          <span class="event-resolved">Resolved</span>
+          <span class="event-resolved">${chosenChoice ? chosenChoice.name : 'Resolved'}</span>
         `;
       } else {
         card.innerHTML = `
@@ -55,14 +60,16 @@ export function renderExecuteView(container: HTMLElement, ctx: RenderContext): v
           <p class="event-desc">${def.description}</p>
           <div class="event-choices">
             ${def.choices
-              .map(
-                (choice, i) => `
-              <button class="btn-secondary event-choice-btn" data-event="${event.definitionId}" data-choice="${i}">
+              .map((choice, i) => {
+                const canAfford = canSpendAttention(state, choice.attentionCost);
+                return `
+              <button class="btn-secondary event-choice-btn ${!canAfford ? 'event-choice--disabled' : ''}"
+                data-event="${event.definitionId}" data-choice="${i}" ${!canAfford ? 'disabled' : ''}>
                 <span class="choice-name">${choice.name}</span>
                 <span class="choice-cost">${choice.attentionCost} ATT</span>
               </button>
-            `,
-              )
+            `;
+              })
               .join('')}
           </div>
         `;
@@ -71,12 +78,28 @@ export function renderExecuteView(container: HTMLElement, ctx: RenderContext): v
       eventSection.appendChild(card);
     }
 
-    // Attach event choice handlers
+    // Attach event choice handlers — spend attention + apply resource effects
     eventSection.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest('.event-choice-btn') as HTMLElement | null;
-      if (!btn) return;
+      const btn = (e.target as HTMLElement).closest('.event-choice-btn') as HTMLButtonElement | null;
+      if (!btn || btn.disabled) return;
       const eventId = btn.dataset.event!;
       const choiceIndex = parseInt(btn.dataset.choice!, 10);
+
+      const def = ctx.registry.getEvent(eventId);
+      if (!def) return;
+      const choice = def.choices[choiceIndex];
+
+      // Spend attention
+      if (choice.attentionCost > 0) {
+        ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: choice.attentionCost, target: eventId });
+      }
+
+      // Apply resource effects
+      if (Object.keys(choice.resourceEffects).length > 0) {
+        ctx.store.dispatch({ type: 'APPLY_EFFECTS', effects: choice.resourceEffects });
+      }
+
+      // Mark resolved
       ctx.store.dispatch({ type: 'RESOLVE_EVENT', eventId, choiceIndex });
     });
 

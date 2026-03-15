@@ -35,18 +35,17 @@ export function calculateAutonomyScore(
       ? state.departments.reduce((sum, d) => sum + d.health, 0) / state.departments.length
       : 50;
 
-  // Initiative success: based on remaining attention (less spent = more delegated)
-  const attentionEfficiency =
-    state.attention.budget > 0
-      ? (state.attention.remaining / state.attention.budget) * 100
-      : 50;
+  // Events handled: fraction of events resolved (rewards engagement, not avoidance)
+  const totalEvents = state.activeEvents.length;
+  const resolvedEvents = state.activeEvents.filter((e) => e.resolved).length;
+  const eventsHandledScore = totalEvents > 0 ? (resolvedEvents / totalEvents) * 100 : 50;
 
   const score =
     delegationScore * (weights.delegationRate ?? 0.3) +
     avgTrust * (weights.leaderTrust ?? 0.25) +
     avgResources * (weights.resourceStability ?? 0.2) +
     avgDeptHealth * (weights.departmentHealth ?? 0.15) +
-    attentionEfficiency * (weights.initiativeSuccess ?? 0.1);
+    eventsHandledScore * (weights.eventsHandled ?? 0.1);
 
   return Math.round(Math.max(0, Math.min(100, score)));
 }

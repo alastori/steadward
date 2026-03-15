@@ -32,6 +32,7 @@ function createInitialState(): GameState {
   return {
     turn: { week: 1, phase: GamePhase.Observe, phaseIndex: 0 },
     resources: { ...DEFAULT_RESOURCES },
+    previousResources: null,
     departments: createInitialDepartments(),
     leaders: createInitialLeaders(registry.getLeaders()),
     attention: { budget: balance.baseAttentionBudget, remaining: balance.baseAttentionBudget },

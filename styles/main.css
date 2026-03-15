@@ -432,11 +432,46 @@ body {
   margin-bottom: var(--space-1);
 }
 
+.init-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
 .init-dept {
   font-size: 0.625rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+.init-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.init-start-btn {
+  font-size: 0.6875rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.init-status {
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+.init-status--active { color: var(--mode-current); }
+.init-status--full { color: var(--text-muted); }
+.init-status--blocked { color: var(--alert-medium); }
+
+.initiative-card--active {
+  border-color: var(--mode-current);
+  opacity: 0.7;
+}
+
+.initiative-card--disabled {
+  opacity: 0.5;
 }
 
 /* ============================================
@@ -547,6 +582,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.event-choice--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .event-resolved {
   font-size: 0.6875rem;
   color: var(--text-muted);
@@ -591,6 +631,37 @@ body {
 
 .review-stat--autonomy {
   color: var(--mode-current);
+}
+
+.review-delta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--bg-light);
+  font-size: 0.8125rem;
+}
+
+.review-delta-label {
+  color: var(--text-secondary);
+  min-width: 100px;
+}
+
+.review-delta-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 50px;
+  text-align: right;
+}
+
+.delta-positive { color: var(--delta-positive); }
+.delta-negative { color: var(--delta-negative); }
+
+.review-delta-current {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  min-width: 30px;
+  text-align: right;
 }
 
 .review-dept-row {

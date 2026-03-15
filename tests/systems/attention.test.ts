@@ -9,6 +9,7 @@ function makeState(overrides?: Partial<GameState>): GameState {
   return {
     turn: { week: 1, phase: GamePhase.Observe, phaseIndex: 0 },
     resources: { ...DEFAULT_RESOURCES },
+    previousResources: null,
     departments: [],
     leaders: [],
     attention: { budget: 10, remaining: 10 },
@@ -28,12 +29,12 @@ describe('Attention system', () => {
   });
 
   it('increases budget at high clarity', () => {
-    expect(calculateAttentionBudget(100, BASE_BALANCE)).toBe(11);
+    expect(calculateAttentionBudget(100, BASE_BALANCE)).toBe(15);
   });
 
   it('decreases budget at low clarity', () => {
     const budget = calculateAttentionBudget(0, BASE_BALANCE);
-    expect(budget).toBe(9);
+    expect(budget).toBe(5);
   });
 
   it('budget never drops below 1', () => {

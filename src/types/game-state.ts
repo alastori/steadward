@@ -14,6 +14,7 @@ export interface TurnState {
 export interface GameState {
   turn: TurnState;
   resources: Resources;
+  previousResources: Resources | null;
   departments: Department[];
   leaders: Leader[];
   attention: { budget: number; remaining: number };

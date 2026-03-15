@@ -38,6 +38,26 @@ export function rootReducer(state: GameState, action: Action): GameState {
         ),
       };
 
+    case 'START_INITIATIVE':
+      return {
+        ...state,
+        activeInitiatives: [
+          ...state.activeInitiatives,
+          {
+            definitionId: action.initiativeId,
+            departmentId: action.departmentId,
+            assignedLeaderId: action.leaderId,
+            weeksRemaining: action.duration,
+            overseen: action.overseen,
+          },
+        ],
+        departments: state.departments.map((d) =>
+          d.id === action.departmentId
+            ? { ...d, activeInitiativeIds: [...d.activeInitiativeIds, action.initiativeId] }
+            : d
+        ),
+      };
+
     case 'SPEND_ATTENTION':
       return {
         ...state,
@@ -57,13 +77,28 @@ export function rootReducer(state: GameState, action: Action): GameState {
         ),
       };
 
+    case 'APPLY_EFFECTS':
+      return {
+        ...state,
+        resources: applyResourceEffects(state.resources, action.effects),
+      };
+
     case 'TICK_WEEK':
       return {
         ...state,
+        previousResources: { ...state.resources },
+        departments: action.departments,
+        leaders: action.leaders,
+        activeInitiatives: action.activeInitiatives,
+        activeEvents: action.drawnEvents,
+        resources: applyResourceEffects(state.resources, action.completedInitiativeEffects),
         attention: {
-          budget: state.attention.budget,
-          remaining: state.attention.budget,
+          budget: action.newAttentionBudget,
+          remaining: action.newAttentionBudget,
         },
+        autonomyScore: action.autonomyScore,
+        autonomyStreakWeeks: action.autonomyStreakWeeks,
+        outcome: action.outcome,
       };
 
     case 'LOAD_STATE':

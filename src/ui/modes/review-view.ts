@@ -1,5 +1,23 @@
 import type { RenderContext } from '../renderer';
+import type { Resources, ResourceType } from '../../types/resources';
+import { RESOURCE_TYPES } from '../../types/resources';
 import { calculateAutonomyScore, checkWinCondition, checkLossCondition } from '../../systems/scoring';
+import { calculateAttentionBudget } from '../../systems/attention';
+import { tickDepartmentHealth } from '../../systems/departments';
+import { tickLeaderFatigue } from '../../systems/leaders';
+import { tickInitiatives } from '../../systems/initiatives';
+import { drawEvents, createActiveEvents } from '../../systems/events';
+import { calculateDelegationQuality, getDelegationOutcome, scaleEffects } from '../../systems/delegation';
+import { createSeededRandom } from '../../utils/random';
+
+const RESOURCE_LABELS: Record<ResourceType, string> = {
+  materials: 'Materials',
+  trust: 'Trust',
+  clarity: 'Clarity',
+  resilience: 'Resilience',
+  knowledge: 'Knowledge',
+  momentum: 'Momentum',
+};
 
 export function renderReviewView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
@@ -31,6 +49,30 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
   `;
   view.appendChild(summary);
 
+  // Resource deltas
+  if (state.previousResources) {
+    const deltaSection = document.createElement('section');
+    deltaSection.className = 'review-section';
+    deltaSection.innerHTML = `<h2 class="section-heading">Resource Changes</h2>`;
+    for (const key of RESOURCE_TYPES) {
+      const current = state.resources[key];
+      const prev = state.previousResources[key];
+      const delta = current - prev;
+      if (delta === 0) continue;
+      const sign = delta > 0 ? '+' : '';
+      const cls = delta > 0 ? 'delta-positive' : 'delta-negative';
+      const row = document.createElement('div');
+      row.className = 'review-delta-row';
+      row.innerHTML = `
+        <span class="review-delta-label">${RESOURCE_LABELS[key]}</span>
+        <span class="review-delta-value ${cls}">${sign}${delta}</span>
+        <span class="review-delta-current">${current}</span>
+      `;
+      deltaSection.appendChild(row);
+    }
+    view.appendChild(deltaSection);
+  }
+
   // Department summary
   const deptSection = document.createElement('section');
   deptSection.className = 'review-section';
@@ -48,7 +90,7 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
   view.appendChild(deptSection);
 
   // Check win/loss
-  const { won } = checkWinCondition(autonomy, state.autonomyStreakWeeks);
+  const { won, newStreak } = checkWinCondition(autonomy, state.autonomyStreakWeeks);
   const lost = checkLossCondition(state.resources);
 
   if (won) {
@@ -63,12 +105,84 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     view.appendChild(loseMsg);
   }
 
-  // Begin next week
+  // Begin next week — computes all ticks and dispatches
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn-primary advance-btn';
   nextBtn.textContent = 'Begin Next Week';
   nextBtn.addEventListener('click', () => {
-    ctx.store.dispatch({ type: 'TICK_WEEK' });
+    const leaderDefs = ctx.registry.getLeaders();
+
+    // Tick departments
+    const tickedDepts = tickDepartmentHealth(state.departments, balance);
+
+    // Tick leaders
+    const tickedLeaders = tickLeaderFatigue(state.leaders, leaderDefs, balance);
+
+    // Tick initiatives and resolve completed ones
+    const { active: remainingInits, completed } = tickInitiatives(state.activeInitiatives);
+    let completedEffects: Partial<Resources> = {};
+    for (const init of completed) {
+      const def = ctx.registry.getInitiative(init.definitionId);
+      if (!def) continue;
+
+      if (init.overseen) {
+        completedEffects = mergeEffects(completedEffects, def.outcomeOverseen.resourceEffects);
+      } else {
+        // Delegation quality determines outcome
+        const leader = state.leaders.find((l) => l.id === init.assignedLeaderId);
+        const leaderDef = leaderDefs.find((d) => d.id === init.assignedLeaderId);
+        if (leader && leaderDef) {
+          const quality = calculateDelegationQuality(
+            leaderDef.stats,
+            leader.fatigue,
+            leader.trust,
+            balance.delegationQualityWeights,
+          );
+          const outcome = getDelegationOutcome(quality);
+          const scaled = scaleEffects(
+            def.outcomeDelegated.resourceEffects as Record<string, number>,
+            outcome,
+          );
+          completedEffects = mergeEffects(completedEffects, scaled as Partial<Resources>);
+        } else {
+          completedEffects = mergeEffects(completedEffects, def.outcomeDelegated.resourceEffects);
+        }
+      }
+    }
+
+    // Clean up completed initiative IDs from departments
+    const completedIds = new Set(completed.map((c) => c.definitionId));
+    const cleanedDepts = tickedDepts.map((d) => ({
+      ...d,
+      activeInitiativeIds: d.activeInitiativeIds.filter((id) => !completedIds.has(id)),
+    }));
+
+    // Draw events for next week
+    const rng = createSeededRandom(state.seed + state.turn.week);
+    const nextWeekState = { ...state, turn: { ...state.turn, week: state.turn.week + 1 } };
+    const eventDefs = drawEvents(ctx.registry.getEvents(), nextWeekState, rng, 2);
+    const drawnEvents = createActiveEvents(eventDefs);
+
+    // Calculate new attention budget
+    const newBudget = calculateAttentionBudget(state.resources.clarity, balance);
+
+    // Determine outcome
+    let outcome: 'win' | 'loss' | null = null;
+    if (won) outcome = 'win';
+    else if (lost) outcome = 'loss';
+
+    ctx.store.dispatch({
+      type: 'TICK_WEEK',
+      departments: cleanedDepts,
+      leaders: tickedLeaders,
+      activeInitiatives: remainingInits,
+      completedInitiativeEffects: completedEffects,
+      drawnEvents,
+      newAttentionBudget: newBudget,
+      autonomyScore: autonomy,
+      autonomyStreakWeeks: outcome === 'win' ? newStreak : won ? newStreak : (autonomy >= 80 ? newStreak : 0),
+      outcome,
+    });
     ctx.store.dispatch({ type: 'ADVANCE_PHASE' });
   });
   view.appendChild(nextBtn);
@@ -81,4 +195,14 @@ function formatDeptName(id: string): string {
     .split('-')
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
+}
+
+function mergeEffects(a: Partial<Resources>, b: Partial<Resources>): Partial<Resources> {
+  const result = { ...a };
+  for (const [key, value] of Object.entries(b)) {
+    if (value !== undefined) {
+      result[key as keyof Resources] = ((result[key as keyof Resources] as number) ?? 0) + value;
+    }
+  }
+  return result;
 }

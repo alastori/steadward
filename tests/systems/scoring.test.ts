@@ -9,6 +9,7 @@ function makeState(overrides?: Partial<GameState>): GameState {
   return {
     turn: { week: 5, phase: GamePhase.Review, phaseIndex: 3 },
     resources: { ...DEFAULT_RESOURCES },
+    previousResources: null,
     departments: [
       { id: 'operations', health: 70, assignedLeaderId: 'l1', activeInitiativeIds: [], unlockedAtWeek: 1 },
       { id: 'infrastructure', health: 65, assignedLeaderId: 'l2', activeInitiativeIds: [], unlockedAtWeek: 1 },

@@ -9,6 +9,7 @@ function createTestState(): GameState {
   return {
     turn: { week: 1, phase: GamePhase.Observe, phaseIndex: 0 },
     resources: { ...DEFAULT_RESOURCES },
+    previousResources: null,
     departments: [],
     leaders: [],
     attention: { budget: 10, remaining: 10 },
