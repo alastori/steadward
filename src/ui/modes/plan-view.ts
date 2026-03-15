@@ -59,6 +59,35 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
   }
   view.appendChild(assignSection);
 
+  // Rest fatigued leaders
+  const fatiguedLeaders = leaders.filter((l) => l.fatigue >= 20);
+  if (fatiguedLeaders.length > 0) {
+    const restSection = document.createElement('section');
+    restSection.className = 'plan-section';
+    restSection.innerHTML = `<h2 class="section-heading">Rest Leaders</h2>`;
+    for (const leader of fatiguedLeaders) {
+      const canAfford = state.attention.remaining >= 2;
+      const row = document.createElement('div');
+      row.className = 'rest-row';
+      row.innerHTML = `
+        <span class="rest-leader-name">${leader.name}</span>
+        <span class="rest-leader-fatigue fatigue--${leader.fatigue >= 60 ? 'high' : 'mid'}">${Math.round(leader.fatigue)}</span>
+        <button class="btn-secondary rest-btn" data-leader="${leader.id}" ${!canAfford ? 'disabled' : ''}>
+          Rest (-25F, 2 ATT)
+        </button>
+      `;
+      restSection.appendChild(row);
+    }
+    restSection.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.rest-btn') as HTMLButtonElement | null;
+      if (!btn || btn.disabled) return;
+      const leaderId = btn.dataset.leader!;
+      ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: 2, target: `rest-${leaderId}` });
+      ctx.store.dispatch({ type: 'REST_LEADER', leaderId });
+    });
+    view.appendChild(restSection);
+  }
+
   // Available initiatives with start buttons
   const initSection = document.createElement('section');
   initSection.className = 'plan-section';

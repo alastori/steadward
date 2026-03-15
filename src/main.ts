@@ -10,6 +10,7 @@ import { createInitialDepartments } from './systems/departments';
 import { createInitialLeaders } from './systems/leaders';
 import { renderTitleView } from './ui/renderer';
 import { wireAnalytics } from './analytics/telemetry';
+import { wireAudio } from './audio/audio-manager';
 import type { GameState } from './types/game-state';
 
 const config = parseGameConfig();
@@ -49,8 +50,9 @@ function createInitialState(): GameState {
 // Initialize store
 const store = createGameStore(createInitialState(), rootReducer);
 
-// Wire analytics
+// Wire analytics + audio
 wireAnalytics(store);
+wireAudio(store);
 
 // Debug access
 (window as unknown as Record<string, unknown>).__gameState = () => store.getState();

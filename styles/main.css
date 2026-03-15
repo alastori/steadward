@@ -251,6 +251,9 @@ body {
   text-align: right;
 }
 
+.resource-row--danger .resource-label { color: var(--alert-high); }
+.resource-value--danger { color: var(--alert-high); }
+
 /* ============================================
    Main Content Area
    ============================================ */
@@ -733,6 +736,24 @@ body {
   font-size: 0.6875rem;
   color: var(--text-muted);
   min-width: 35px;
+}
+
+.rest-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.rest-leader-name {
+  flex: 1;
+  font-size: 0.8125rem;
+}
+
+.rest-leader-fatigue {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
 }
 
 .rest-btn {

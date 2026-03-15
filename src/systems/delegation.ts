@@ -1,5 +1,4 @@
-import type { LeaderStats } from '../types/leaders';
-import type { BalanceConstants } from '../types/content';
+import type { LeaderStats, LeaderTendencies } from '../types/leaders';
 
 /**
  * Calculate delegation quality score (0-1) based on leader stats.
@@ -31,6 +30,23 @@ export function calculateDelegationQuality(
   const trustBonus = trust > 50 ? ((trust - 50) / 50) * 0.15 : 0;
 
   return Math.max(0, Math.min(1, baseQuality - fatiguePenalty + trustBonus));
+}
+
+/**
+ * Apply decision style variance to delegation quality.
+ * Cautious leaders are predictable, aggressive leaders gamble.
+ */
+export function applyDecisionStyleVariance(
+  quality: number,
+  style: LeaderTendencies['autonomousDecisionStyle'],
+  roll: number, // 0-1 from seeded RNG
+): number {
+  const range = style === 'cautious' ? 0.05
+    : style === 'balanced' ? 0.10
+    : 0.20; // aggressive
+
+  const offset = (roll * 2 - 1) * range;
+  return Math.max(0, Math.min(1, quality + offset));
 }
 
 /**

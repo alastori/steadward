@@ -7,7 +7,7 @@ import { tickDepartmentHealth } from '../../systems/departments';
 import { tickLeaderFatigue, growTrust, decayTrust } from '../../systems/leaders';
 import { tickInitiatives } from '../../systems/initiatives';
 import { drawEvents, createActiveEvents } from '../../systems/events';
-import { calculateDelegationQuality, getDelegationOutcome, scaleEffects } from '../../systems/delegation';
+import { calculateDelegationQuality, applyDecisionStyleVariance, getDelegationOutcome, scaleEffects } from '../../systems/delegation';
 import { createSeededRandom } from '../../utils/random';
 
 const RESOURCE_LABELS: Record<ResourceType, string> = {
@@ -89,10 +89,10 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
   }
   view.appendChild(deptSection);
 
-  // Leader fatigue with rest buttons
+  // Leader fatigue summary (read-only — rest is in Plan phase)
   const leaderSection = document.createElement('section');
   leaderSection.className = 'review-section';
-  leaderSection.innerHTML = `<h2 class="section-heading">Leader Fatigue</h2>`;
+  leaderSection.innerHTML = `<h2 class="section-heading">Leader Status</h2>`;
   for (const leader of state.leaders) {
     if (leader.availableAtWeek > state.turn.week) continue;
     const fatigueLevel = leader.fatigue >= 60 ? 'high' : leader.fatigue >= 30 ? 'mid' : 'low';
@@ -100,21 +100,11 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     row.className = 'review-leader-row';
     row.innerHTML = `
       <span class="review-leader-name">${leader.name}</span>
-      <span class="review-leader-fatigue fatigue--${fatigueLevel}">${Math.round(leader.fatigue)}</span>
+      <span class="review-leader-fatigue fatigue--${fatigueLevel}">F:${Math.round(leader.fatigue)}</span>
       <span class="review-leader-trust">T:${Math.round(leader.trust)}</span>
-      ${leader.fatigue >= 20 && state.attention.remaining >= 2
-        ? `<button class="btn-secondary rest-btn" data-leader="${leader.id}">Rest (-25F, 2 ATT)</button>`
-        : ''}
     `;
     leaderSection.appendChild(row);
   }
-  leaderSection.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('.rest-btn') as HTMLElement | null;
-    if (!btn) return;
-    const leaderId = btn.dataset.leader!;
-    ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: 2, target: `rest-${leaderId}` });
-    ctx.store.dispatch({ type: 'REST_LEADER', leaderId });
-  });
   view.appendChild(leaderSection);
 
   // Check win/loss
@@ -160,11 +150,22 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
         const leader = tickedLeaders.find((l) => l.id === init.assignedLeaderId);
         const leaderDef = leaderDefs.find((d) => d.id === init.assignedLeaderId);
         if (leader && leaderDef) {
-          const quality = calculateDelegationQuality(
+          const baseQuality = calculateDelegationQuality(
             leaderDef.stats,
             leader.fatigue,
             leader.trust,
             balance.delegationQualityWeights,
+          );
+          // Apply decision style variance (seeded per leader+initiative+week)
+          const varianceRng = createSeededRandom(
+            state.seed + state.turn.week * 100 +
+            leader.id.charCodeAt(leader.id.length - 1) +
+            init.definitionId.charCodeAt(init.definitionId.length - 1),
+          );
+          const quality = applyDecisionStyleVariance(
+            baseQuality,
+            leaderDef.tendencies.autonomousDecisionStyle,
+            varianceRng.next(),
           );
           const outcome = getDelegationOutcome(quality);
           const scaled = scaleEffects(
