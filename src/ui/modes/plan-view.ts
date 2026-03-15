@@ -67,7 +67,12 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
   const activeIds = new Set(state.activeInitiatives.map((i) => i.definitionId));
 
   for (const dept of departments) {
-    const deptInits = registry.getInitiatives(dept.id);
+    const allDeptInits = registry.getInitiatives(dept.id);
+    // Gate initiatives by week tags: 'week-1' available in weeks 1-2, others unlock week 3+
+    const deptInits = allDeptInits.filter((init) => {
+      if (init.tags.includes('week-1')) return true; // Always available
+      return state.turn.week >= 3; // Other initiatives unlock at week 3
+    });
     const canAdd = canAddInitiative(state.activeInitiatives, dept.id);
     const deptLeader = dept.assignedLeaderId;
 

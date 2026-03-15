@@ -77,6 +77,16 @@ export function rootReducer(state: GameState, action: Action): GameState {
         ),
       };
 
+    case 'REST_LEADER':
+      return {
+        ...state,
+        leaders: state.leaders.map((l) =>
+          l.id === action.leaderId
+            ? { ...l, fatigue: Math.max(0, l.fatigue - 25) }
+            : l
+        ),
+      };
+
     case 'APPLY_EFFECTS':
       return {
         ...state,
@@ -91,6 +101,7 @@ export function rootReducer(state: GameState, action: Action): GameState {
         leaders: action.leaders,
         activeInitiatives: action.activeInitiatives,
         activeEvents: action.drawnEvents,
+        firedEventIds: action.newFiredEventIds,
         resources: applyResourceEffects(state.resources, action.completedInitiativeEffects),
         attention: {
           budget: action.newAttentionBudget,

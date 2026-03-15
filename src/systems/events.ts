@@ -40,7 +40,10 @@ export function drawEvents(
   rng: SeededRandom,
   maxEvents: number = 2,
 ): EventDefinition[] {
-  const eligible = pool.filter((e) => meetsConditions(e.conditions, state));
+  const firedIds = new Set(state.firedEventIds);
+  const eligible = pool.filter(
+    (e) => !firedIds.has(e.id) && meetsConditions(e.conditions, state),
+  );
   if (eligible.length === 0) return [];
 
   const shuffled = rng.shuffle(eligible);

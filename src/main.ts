@@ -38,6 +38,7 @@ function createInitialState(): GameState {
     attention: { budget: balance.baseAttentionBudget, remaining: balance.baseAttentionBudget },
     activeInitiatives: [],
     activeEvents: [],
+    firedEventIds: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,

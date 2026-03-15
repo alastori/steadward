@@ -20,6 +20,7 @@ export interface GameState {
   attention: { budget: number; remaining: number };
   activeInitiatives: ActiveInitiative[];
   activeEvents: ActiveEvent[];
+  firedEventIds: string[];
   autonomyScore: number;
   autonomyStreakWeeks: number;
   outcome: 'win' | 'loss' | null;

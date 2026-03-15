@@ -681,6 +681,70 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.review-leader-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--bg-light);
+  font-size: 0.8125rem;
+}
+
+.review-leader-name {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.review-leader-fatigue {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  text-align: right;
+}
+
+.fatigue--low { color: var(--delta-positive); }
+.fatigue--mid { color: var(--alert-medium); }
+.fatigue--high { color: var(--alert-high); }
+
+.review-leader-trust {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  min-width: 35px;
+}
+
+.rest-btn {
+  font-size: 0.625rem;
+  padding: 2px var(--space-2);
+}
+
+.demo-wall-hook {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+.demo-wall-run-stats {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.demo-wall-stat {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.demo-wall-restart {
+  margin-top: var(--space-4);
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .review-outcome {
   padding: var(--space-4);
   border-radius: var(--radius-md);

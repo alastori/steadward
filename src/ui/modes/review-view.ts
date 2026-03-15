@@ -4,7 +4,7 @@ import { RESOURCE_TYPES } from '../../types/resources';
 import { calculateAutonomyScore, checkWinCondition, checkLossCondition } from '../../systems/scoring';
 import { calculateAttentionBudget } from '../../systems/attention';
 import { tickDepartmentHealth } from '../../systems/departments';
-import { tickLeaderFatigue } from '../../systems/leaders';
+import { tickLeaderFatigue, growTrust, decayTrust } from '../../systems/leaders';
 import { tickInitiatives } from '../../systems/initiatives';
 import { drawEvents, createActiveEvents } from '../../systems/events';
 import { calculateDelegationQuality, getDelegationOutcome, scaleEffects } from '../../systems/delegation';
@@ -89,6 +89,34 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
   }
   view.appendChild(deptSection);
 
+  // Leader fatigue with rest buttons
+  const leaderSection = document.createElement('section');
+  leaderSection.className = 'review-section';
+  leaderSection.innerHTML = `<h2 class="section-heading">Leader Fatigue</h2>`;
+  for (const leader of state.leaders) {
+    if (leader.availableAtWeek > state.turn.week) continue;
+    const fatigueLevel = leader.fatigue >= 60 ? 'high' : leader.fatigue >= 30 ? 'mid' : 'low';
+    const row = document.createElement('div');
+    row.className = 'review-leader-row';
+    row.innerHTML = `
+      <span class="review-leader-name">${leader.name}</span>
+      <span class="review-leader-fatigue fatigue--${fatigueLevel}">${Math.round(leader.fatigue)}</span>
+      <span class="review-leader-trust">T:${Math.round(leader.trust)}</span>
+      ${leader.fatigue >= 20 && state.attention.remaining >= 2
+        ? `<button class="btn-secondary rest-btn" data-leader="${leader.id}">Rest (-25F, 2 ATT)</button>`
+        : ''}
+    `;
+    leaderSection.appendChild(row);
+  }
+  leaderSection.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.rest-btn') as HTMLElement | null;
+    if (!btn) return;
+    const leaderId = btn.dataset.leader!;
+    ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: 2, target: `rest-${leaderId}` });
+    ctx.store.dispatch({ type: 'REST_LEADER', leaderId });
+  });
+  view.appendChild(leaderSection);
+
   // Check win/loss
   const { won, newStreak } = checkWinCondition(autonomy, state.autonomyStreakWeeks);
   const lost = checkLossCondition(state.resources);
@@ -105,7 +133,7 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     view.appendChild(loseMsg);
   }
 
-  // Begin next week — computes all ticks and dispatches
+  // Begin next week
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn-primary advance-btn';
   nextBtn.textContent = 'Begin Next Week';
@@ -115,8 +143,8 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
     // Tick departments
     const tickedDepts = tickDepartmentHealth(state.departments, balance);
 
-    // Tick leaders
-    const tickedLeaders = tickLeaderFatigue(state.leaders, leaderDefs, balance);
+    // Tick leaders (fatigue)
+    let tickedLeaders = tickLeaderFatigue(state.leaders, leaderDefs, balance);
 
     // Tick initiatives and resolve completed ones
     const { active: remainingInits, completed } = tickInitiatives(state.activeInitiatives);
@@ -129,7 +157,7 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
         completedEffects = mergeEffects(completedEffects, def.outcomeOverseen.resourceEffects);
       } else {
         // Delegation quality determines outcome
-        const leader = state.leaders.find((l) => l.id === init.assignedLeaderId);
+        const leader = tickedLeaders.find((l) => l.id === init.assignedLeaderId);
         const leaderDef = leaderDefs.find((d) => d.id === init.assignedLeaderId);
         if (leader && leaderDef) {
           const quality = calculateDelegationQuality(
@@ -144,6 +172,16 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
             outcome,
           );
           completedEffects = mergeEffects(completedEffects, scaled as Partial<Resources>);
+
+          // Trust growth/decay based on delegation outcome
+          tickedLeaders = tickedLeaders.map((l) => {
+            if (l.id !== init.assignedLeaderId) return l;
+            if (outcome === 'success' || outcome === 'partial') {
+              return growTrust(l, leaderDef, balance);
+            } else {
+              return decayTrust(l, balance.trustGrowthBase);
+            }
+          });
         } else {
           completedEffects = mergeEffects(completedEffects, def.outcomeDelegated.resourceEffects);
         }
@@ -157,11 +195,18 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
       activeInitiativeIds: d.activeInitiativeIds.filter((id) => !completedIds.has(id)),
     }));
 
-    // Draw events for next week
+    // Draw events for next week (excluding already-fired events)
     const rng = createSeededRandom(state.seed + state.turn.week);
-    const nextWeekState = { ...state, turn: { ...state.turn, week: state.turn.week + 1 } };
+    const nextWeekState = {
+      ...state,
+      turn: { ...state.turn, week: state.turn.week + 1 },
+    };
     const eventDefs = drawEvents(ctx.registry.getEvents(), nextWeekState, rng, 2);
     const drawnEvents = createActiveEvents(eventDefs);
+    const newFiredEventIds = [
+      ...state.firedEventIds,
+      ...eventDefs.map((e) => e.id),
+    ];
 
     // Calculate new attention budget
     const newBudget = calculateAttentionBudget(state.resources.clarity, balance);
@@ -178,9 +223,10 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
       activeInitiatives: remainingInits,
       completedInitiativeEffects: completedEffects,
       drawnEvents,
+      newFiredEventIds,
       newAttentionBudget: newBudget,
       autonomyScore: autonomy,
-      autonomyStreakWeeks: outcome === 'win' ? newStreak : won ? newStreak : (autonomy >= 80 ? newStreak : 0),
+      autonomyStreakWeeks: autonomy >= 80 ? newStreak : 0,
       outcome,
     });
     ctx.store.dispatch({ type: 'ADVANCE_PHASE' });

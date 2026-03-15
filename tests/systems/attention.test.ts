@@ -15,6 +15,7 @@ function makeState(overrides?: Partial<GameState>): GameState {
     attention: { budget: 10, remaining: 10 },
     activeInitiatives: [],
     activeEvents: [],
+    firedEventIds: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,

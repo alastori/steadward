@@ -22,7 +22,7 @@ export function createRenderer(ctx: RenderContext): () => void {
 
     // Demo wall check
     if (__EDITION__ === 'demo' && state.turn.week > balance.demoWeekLimit) {
-      renderDemoWall(ctx.app, state.turn.week, state.autonomyScore);
+      renderDemoWall(ctx.app, state);
       return;
     }
 

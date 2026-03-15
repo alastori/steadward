@@ -24,6 +24,7 @@ function makeState(overrides?: Partial<GameState>): GameState {
       { definitionId: 'i2', departmentId: 'infrastructure', assignedLeaderId: 'l2', weeksRemaining: 2, overseen: false },
     ],
     activeEvents: [],
+    firedEventIds: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,

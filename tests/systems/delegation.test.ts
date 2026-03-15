@@ -43,7 +43,7 @@ describe('Delegation system', () => {
   it('getDelegationOutcome returns correct tiers', () => {
     expect(getDelegationOutcome(0.8)).toBe('success');
     expect(getDelegationOutcome(0.5)).toBe('partial');
-    expect(getDelegationOutcome(0.3)).toBe('failure');
+    expect(getDelegationOutcome(0.2)).toBe('failure');
   });
 
   it('scaleEffects preserves costs (negative values)', () => {

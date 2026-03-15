@@ -18,10 +18,12 @@ export type Action =
       activeInitiatives: ActiveInitiative[];
       completedInitiativeEffects: Partial<Resources>;
       drawnEvents: ActiveEvent[];
+      newFiredEventIds: string[];
       newAttentionBudget: number;
       autonomyScore: number;
       autonomyStreakWeeks: number;
       outcome: 'win' | 'loss' | null;
     }
+  | { type: 'REST_LEADER'; leaderId: string }
   | { type: 'APPLY_EFFECTS'; effects: Partial<Resources> }
   | { type: 'LOAD_STATE'; state: import('./game-state').GameState };
