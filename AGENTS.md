@@ -45,16 +45,17 @@ This project has 6 specialist agents in `.claude/agents/`. Invoke them by name:
 
 **Model rationale**: opus for complex decisions (architecture, creative writing, balance). sonnet for pattern-matching checks (visual, UX, GTM checklists).
 
-**Tool restrictions**: architect, art-director, ux-reviewer, game-designer, growth-pm are read-only (Read, Grep, Glob). narrative-writer has Edit+Write for content authoring. architect also has Bash for running tests/git.
+**Tool restrictions**: art-director, ux-reviewer, growth-pm are read-only (Read, Grep, Glob). narrative-writer has Edit+Write for content authoring. architect and game-designer also have Bash for running tests/git.
 
 ## GTM Launch Checklist
 
-- [ ] OG meta tags in index.html (og:title, og:description, og:image 1200x630, Twitter Cards, Schema.org)
-- [ ] URL deep linking: `?seed=` and `?challenge=` parsed in main.ts
-- [ ] Analytics: Plausible wired as store subscriber in Phase 2 (game_start, week_complete, demo_wall_hit, purchase_clicked)
-- [ ] Demo wall at Week 5: narrative hook + email capture + purchase CTA
-- [ ] Shareable run summary: canvas 1200x630 with seed, score, stats, Share + Challenge buttons
+- [x] OG meta tags in index.html (og:title, og:description, og:image 1200x630, Twitter Cards, Schema.org)
+- [x] URL deep linking: `?seed=` and `?challenge=` parsed in main.ts
+- [x] Analytics: Plausible wired as store subscriber (game_start, week_complete, demo_wall_hit, purchase_clicked)
+- [x] Demo wall at Week 5: narrative hook + email capture + purchase CTA + share + play again
+- [x] Shareable run summary: canvas 1200x630 with seed, score, stats, Share + Challenge buttons
 - [ ] Domain: steadward.com, steadward.gg | X: @steadwardgame | Email: steadwardgame@gmail.com
+- [x] Deployed: https://alastori.github.io/steadward/
 
 ## Full Documentation
 
