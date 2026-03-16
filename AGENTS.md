@@ -67,3 +67,4 @@ See `docs/` for complete specs:
 - `audio-direction.md` — music, SFX, adaptive audio
 - `narrative-direction.md` — tone, leader profiles, event text
 - `ux-direction.md` — player flow, layouts, accessibility
+- `development-workflow.md` — how the AI tooling works, how to replicate
