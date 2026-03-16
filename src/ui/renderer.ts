@@ -1,6 +1,7 @@
 import type { GameStore } from '../engine/game-store';
 import type { ContentRegistry } from '../content/registry';
 import { renderTitleScreen } from './screens/title-screen';
+import { renderBriefingSequence } from './screens/briefing-screen';
 import { renderGameScreen } from './screens/game-screen';
 import { renderOutcomeScreen } from './screens/outcome-screen';
 import { renderDemoWall } from './screens/demo-wall-screen';
@@ -47,6 +48,9 @@ export function createRenderer(ctx: RenderContext): () => void {
 export function renderTitleView(ctx: RenderContext): void {
   ctx.app.innerHTML = '';
   renderTitleScreen(ctx.app, () => {
-    createRenderer(ctx);
+    // Show briefing sequence before starting the game
+    renderBriefingSequence(ctx.app, () => {
+      createRenderer(ctx);
+    });
   });
 }

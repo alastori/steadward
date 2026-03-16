@@ -1,4 +1,5 @@
 import type { RenderContext } from '../renderer';
+import { renderHintBanner } from '../components/hint-banner';
 import type { Resources, ResourceType } from '../../types/resources';
 import { RESOURCE_TYPES } from '../../types/resources';
 import { calculateAutonomyScore, checkWinCondition, checkLossCondition } from '../../systems/scoring';
@@ -26,6 +27,8 @@ export function renderReviewView(container: HTMLElement, ctx: RenderContext): vo
 
   const view = document.createElement('div');
   view.className = 'mode-view review-view';
+
+  renderHintBanner(view, ctx.store);
 
   // Week summary
   const summary = document.createElement('section');

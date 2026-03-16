@@ -1,6 +1,7 @@
 import type { RenderContext } from '../renderer';
 import { getAvailableDepartments } from '../../systems/departments';
 import { getAvailableLeaders } from '../../systems/leaders';
+import { renderHintBanner } from '../components/hint-banner';
 
 export function renderObserveView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
@@ -9,6 +10,12 @@ export function renderObserveView(container: HTMLElement, ctx: RenderContext): v
 
   const view = document.createElement('div');
   view.className = 'mode-view observe-view';
+
+  renderHintBanner(view, ctx.store);
+
+  // Locked departments (future unlocks)
+  const allDepts = state.departments;
+  const lockedDepts = allDepts.filter((d) => d.unlockedAtWeek > state.turn.week);
 
   // Department overview
   const deptSection = document.createElement('section');
@@ -29,6 +36,18 @@ export function renderObserveView(container: HTMLElement, ctx: RenderContext): v
         <div class="dept-bar-fill" style="width: ${dept.health}%"></div>
       </div>
       <span class="dept-leader">${leaderName}</span>
+    `;
+    deptSection.appendChild(card);
+  }
+  // Locked departments
+  for (const dept of lockedDepts) {
+    const card = document.createElement('div');
+    card.className = 'dept-card dept-card--locked';
+    card.innerHTML = `
+      <div class="dept-card-header">
+        <span class="dept-name">${formatDeptName(dept.id)}</span>
+      </div>
+      <span class="dept-unlock-label">Available Week ${dept.unlockedAtWeek}</span>
     `;
     deptSection.appendChild(card);
   }

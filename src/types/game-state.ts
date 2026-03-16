@@ -29,6 +29,7 @@ export interface GameState {
   }>;
   autonomyScore: number;
   autonomyStreakWeeks: number;
+  hintsShown: string[];
   outcome: 'win' | 'loss' | null;
   seed: number;
 }

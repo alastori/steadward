@@ -31,5 +31,6 @@ export type Action =
       outcome: 'win' | 'loss' | null;
     }
   | { type: 'REST_LEADER'; leaderId: string }
+  | { type: 'MARK_HINT_SHOWN'; hintId: string }
   | { type: 'APPLY_EFFECTS'; effects: Partial<Resources> }
   | { type: 'LOAD_STATE'; state: import('./game-state').GameState };

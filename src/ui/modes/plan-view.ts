@@ -3,6 +3,7 @@ import { getAvailableDepartments } from '../../systems/departments';
 import { getAvailableLeaders } from '../../systems/leaders';
 import { canStartInitiative, canAddInitiative } from '../../systems/initiatives';
 import { createSeededRandom } from '../../utils/random';
+import { renderHintBanner } from '../components/hint-banner';
 
 export function renderPlanView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
@@ -12,6 +13,8 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
 
   const view = document.createElement('div');
   view.className = 'mode-view plan-view';
+
+  renderHintBanner(view, ctx.store);
 
   // Leader assignment
   const assignSection = document.createElement('section');

@@ -1058,6 +1058,136 @@ body {
 }
 
 /* ============================================
+   Briefing Screens
+   ============================================ */
+.briefing-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-darkest);
+  z-index: 100;
+}
+
+.briefing-content {
+  max-width: 520px;
+  padding: var(--space-6);
+}
+
+.briefing-label {
+  display: block;
+  font: 400 0.6875rem/1rem 'Press Start 2P', monospace;
+  color: var(--mode-observe);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-6);
+}
+
+.briefing-text {
+  font: 400 1rem/1.75rem 'Inter', sans-serif;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4);
+}
+
+.briefing-text:last-of-type {
+  margin-bottom: var(--space-8);
+}
+
+.briefing-text--secondary {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.briefing-advance {
+  background: var(--mode-observe);
+}
+
+.briefing-screen--exiting {
+  animation: briefing-exit 300ms ease-in forwards;
+}
+
+@keyframes briefing-exit {
+  to { opacity: 0; }
+}
+
+/* ============================================
+   Hint Banner
+   ============================================ */
+.hint-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--mode-current-bg);
+  border: 1px solid var(--mode-current);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  animation: hint-enter 300ms ease-out;
+}
+
+.hint-icon {
+  flex-shrink: 0;
+  color: var(--mode-current);
+  font-size: 1rem;
+}
+
+.hint-text {
+  flex: 1;
+  font: 400 0.8125rem/1.25rem 'Inter', sans-serif;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.hint-dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+}
+
+.hint-dismiss:hover {
+  color: var(--text-primary);
+  background: var(--bg-medium);
+}
+
+@keyframes hint-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   Locked Department Cards
+   ============================================ */
+.dept-card--locked {
+  opacity: 0.4;
+  border: 1px dashed var(--bg-light);
+  pointer-events: none;
+}
+
+.dept-unlock-label {
+  font: 500 0.6875rem/1rem 'Inter', sans-serif;
+  color: var(--text-muted);
+}
+
+/* ============================================
+   Nudge Glow
+   ============================================ */
+@keyframes nudge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--mode-current) 30%, transparent); }
+}
+
+.nudge-glow {
+  animation: nudge-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
    Reduced Motion
    ============================================ */
 @media (prefers-reduced-motion: reduce) {

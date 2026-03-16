@@ -20,6 +20,7 @@ function makeState(overrides?: Partial<GameState>): GameState {
     activeEvents: [],
     firedEventIds: [],
     lastCompletedInitiatives: [],
+    hintsShown: [],
     autonomyScore: 0,
     autonomyStreakWeeks: 0,
     outcome: null,

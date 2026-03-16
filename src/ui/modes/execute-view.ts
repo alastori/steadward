@@ -1,11 +1,14 @@
 import type { RenderContext } from '../renderer';
 import { canSpendAttention } from '../../systems/attention';
+import { renderHintBanner } from '../components/hint-banner';
 
 export function renderExecuteView(container: HTMLElement, ctx: RenderContext): void {
   const state = ctx.store.getState();
 
   const view = document.createElement('div');
   view.className = 'mode-view execute-view';
+
+  renderHintBanner(view, ctx.store);
 
   // Active initiatives
   const initSection = document.createElement('section');

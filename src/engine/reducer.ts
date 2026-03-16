@@ -77,6 +77,12 @@ export function rootReducer(state: GameState, action: Action): GameState {
         ),
       };
 
+    case 'MARK_HINT_SHOWN':
+      return {
+        ...state,
+        hintsShown: [...state.hintsShown, action.hintId],
+      };
+
     case 'REST_LEADER':
       return {
         ...state,
