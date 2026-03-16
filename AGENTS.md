@@ -2,6 +2,25 @@
 
 Browser-based strategy/management game. TypeScript + Vanilla DOM + Vite.
 
+## Enforcement Rules (MUST Follow)
+
+1. **Engine/UI boundary**: `src/systems/` and `src/engine/` MUST NEVER import from `src/ui/`. UI dispatches actions, never mutates state directly.
+2. **Content as data**: Leaders, initiatives, events are data in `src/content/base-pack/`. Adding content means creating data, never modifying system files.
+3. **State is serializable**: `GameState` must always be JSON-serializable. No functions, no DOM references, no class instances in state.
+4. **Resource clamping**: All resources (0-100) are clamped in the reducer. Systems never clamp — the reducer owns clamping.
+5. **Test before commit**: Run `npx tsc --noEmit && npx vitest run` before every commit. Both must pass.
+
+## Agent Triggers
+
+| When you hear... | Invoke agent | What it does |
+|---|---|---|
+| "review the architecture" / "check boundaries" | **architect** | Validates state management, engine/UI boundary, serialization |
+| "check the colors" / "review the UI" | **art-director** | Validates color accuracy, typography, spacing, accessibility |
+| "write initiative text" / "write event text" | **narrative-writer** | Writes game text in Steadward's tone |
+| "review the UX" / "check the flow" | **ux-reviewer** | Validates player flow, onboarding, accessibility |
+| "review the balance" / "simulate a run" | **game-designer** | Reviews mechanics balance, scoring, delegation math |
+| "check GTM" / "review analytics" | **growth-pm** | Validates shareability, analytics, demo wall, OG tags |
+
 ## Quick Reference
 
 - **Repo**: [alastori/steadward](https://github.com/alastori/steadward)
