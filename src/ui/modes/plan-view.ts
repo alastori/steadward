@@ -1,4 +1,5 @@
 import type { RenderContext } from '../renderer';
+import type { Department } from '../../types/departments';
 import { getAvailableDepartments } from '../../systems/departments';
 import { getAvailableLeaders } from '../../systems/leaders';
 import { canStartInitiative, canAddInitiative } from '../../systems/initiatives';
@@ -10,205 +11,241 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
   const departments = getAvailableDepartments(state.departments, state.turn.week);
   const leaders = getAvailableLeaders(state.leaders, state.turn.week);
   const registry = ctx.registry;
+  const activeIds = new Set(state.activeInitiatives.map((i) => i.definitionId));
+  const initRng = createSeededRandom(state.seed * 1000 + state.turn.week);
 
   const view = document.createElement('div');
   view.className = 'mode-view plan-view';
 
   renderHintBanner(view, ctx.store);
 
-  // Leader assignment
-  const assignSection = document.createElement('section');
-  assignSection.className = 'plan-section';
-  assignSection.innerHTML = `<h2 class="section-heading">Assign Leaders</h2>`;
+  // Kanban board
+  const board = document.createElement('div');
+  board.className = 'plan-board';
+  board.style.setProperty('--plan-cols', String(departments.length));
 
   for (const dept of departments) {
-    const card = document.createElement('div');
-    card.className = 'plan-dept-card';
+    const column = createDeptColumn(dept, ctx, state, leaders, registry, activeIds, initRng);
+    board.appendChild(column);
+  }
 
-    const availableLeaders = leaders.filter(
-      (l) => !l.assignedDepartmentId || l.assignedDepartmentId === dept.id,
-    );
+  view.appendChild(board);
 
-    card.innerHTML = `
-      <span class="plan-dept-name">${formatDeptName(dept.id)}</span>
-      <select class="leader-select" data-dept="${dept.id}">
-        <option value="">— Unassigned —</option>
-        ${availableLeaders
-          .map(
-            (l) =>
-              `<option value="${l.id}" ${l.assignedDepartmentId === dept.id ? 'selected' : ''}>${l.name} (F:${Math.round(l.fatigue)} T:${Math.round(l.trust)})</option>`,
-          )
-          .join('')}
-      </select>
-    `;
-    // Dispatch assignment immediately on change so it survives re-renders
-    const select = card.querySelector('select')!;
-    select.addEventListener('change', () => {
-      const deptId = select.dataset.dept!;
-      const leaderId = select.value;
-      const currentLeader = ctx.store.getState().departments.find((d) => d.id === deptId)?.assignedLeaderId;
+  // Confirm Plan button
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn-primary plan-confirm-btn';
+  confirmBtn.textContent = 'Confirm Plan';
+  confirmBtn.addEventListener('click', () => {
+    ctx.store.dispatch({ type: 'ADVANCE_PHASE' });
+  });
+  view.appendChild(confirmBtn);
 
-      if (leaderId && leaderId !== currentLeader) {
-        if (currentLeader) {
-          ctx.store.dispatch({ type: 'UNASSIGN_LEADER', leaderId: currentLeader });
-        }
-        ctx.store.dispatch({ type: 'ASSIGN_LEADER', leaderId, departmentId: deptId });
-      } else if (!leaderId && currentLeader) {
+  container.appendChild(view);
+}
+
+function createDeptColumn(
+  dept: Department,
+  ctx: RenderContext,
+  state: import('../../types/game-state').GameState,
+  leaders: import('../../types/leaders').Leader[],
+  registry: import('../../content/registry').ContentRegistry,
+  activeIds: Set<string>,
+  initRng: import('../../utils/random').SeededRandom,
+): HTMLElement {
+  const column = document.createElement('div');
+  column.className = 'plan-column';
+  column.dataset.dept = dept.id;
+
+  const activeCount = state.activeInitiatives.filter((i) => i.departmentId === dept.id).length;
+
+  // Column header
+  const header = document.createElement('div');
+  header.className = 'plan-column-header';
+  header.innerHTML = `
+    <span class="plan-column-title">${formatDeptName(dept.id)}</span>
+    <span class="plan-column-slots ${activeCount >= 2 ? 'plan-column-slots--full' : ''}">${activeCount}/2</span>
+  `;
+  column.appendChild(header);
+
+  // Leader slot
+  const leaderSlot = document.createElement('div');
+  leaderSlot.className = 'plan-leader-slot';
+
+  const availableLeaders = leaders.filter(
+    (l) => !l.assignedDepartmentId || l.assignedDepartmentId === dept.id,
+  );
+
+  const select = document.createElement('select');
+  select.className = 'leader-select';
+  select.dataset.dept = dept.id;
+  select.innerHTML = `
+    <option value="">— Unassigned —</option>
+    ${availableLeaders
+      .map(
+        (l) =>
+          `<option value="${l.id}" ${l.assignedDepartmentId === dept.id ? 'selected' : ''}>${l.name} (F:${Math.round(l.fatigue)} T:${Math.round(l.trust)})</option>`,
+      )
+      .join('')}
+  `;
+
+  select.addEventListener('change', () => {
+    const deptId = select.dataset.dept!;
+    const leaderId = select.value;
+    const currentLeader = ctx.store.getState().departments.find((d) => d.id === deptId)?.assignedLeaderId;
+
+    if (leaderId && leaderId !== currentLeader) {
+      if (currentLeader) {
         ctx.store.dispatch({ type: 'UNASSIGN_LEADER', leaderId: currentLeader });
       }
-    });
-
-    assignSection.appendChild(card);
-  }
-  view.appendChild(assignSection);
-
-  // Rest fatigued leaders
-  const fatiguedLeaders = leaders.filter((l) => l.fatigue >= 20);
-  if (fatiguedLeaders.length > 0) {
-    const restSection = document.createElement('section');
-    restSection.className = 'plan-section';
-    restSection.innerHTML = `<h2 class="section-heading">Rest Leaders</h2>`;
-    for (const leader of fatiguedLeaders) {
-      const canAfford = state.attention.remaining >= 2;
-      const row = document.createElement('div');
-      row.className = 'rest-row';
-      row.innerHTML = `
-        <span class="rest-leader-name">${leader.name}</span>
-        <span class="rest-leader-fatigue fatigue--${leader.fatigue >= 60 ? 'high' : 'mid'}">${Math.round(leader.fatigue)}</span>
-        <button class="btn-secondary rest-btn" data-leader="${leader.id}" ${!canAfford ? 'disabled' : ''}>
-          Rest (-25F, 2 ATT)
-        </button>
-      `;
-      restSection.appendChild(row);
+      ctx.store.dispatch({ type: 'ASSIGN_LEADER', leaderId, departmentId: deptId });
+    } else if (!leaderId && currentLeader) {
+      ctx.store.dispatch({ type: 'UNASSIGN_LEADER', leaderId: currentLeader });
     }
-    restSection.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest('.rest-btn') as HTMLButtonElement | null;
-      if (!btn || btn.disabled) return;
-      const leaderId = btn.dataset.leader!;
-      ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: 2, target: `rest-${leaderId}` });
-      ctx.store.dispatch({ type: 'REST_LEADER', leaderId });
+  });
+
+  leaderSlot.appendChild(select);
+
+  // Inline rest for fatigued assigned leader
+  const assignedLeader = dept.assignedLeaderId
+    ? leaders.find((l) => l.id === dept.assignedLeaderId)
+    : null;
+  if (assignedLeader && assignedLeader.fatigue >= 20) {
+    const restRow = document.createElement('div');
+    restRow.className = 'plan-leader-rest';
+    const canAffordRest = state.attention.remaining >= 2;
+    const fatigueClass = assignedLeader.fatigue >= 60 ? 'high' : 'mid';
+    restRow.innerHTML = `
+      <span class="plan-rest-indicator fatigue--${fatigueClass}">Fatigue: ${Math.round(assignedLeader.fatigue)}</span>
+      <button class="btn-secondary plan-rest-btn" data-leader="${assignedLeader.id}" ${!canAffordRest ? 'disabled' : ''}>
+        Rest (-25F, 2 ATT)
+      </button>
+    `;
+    restRow.querySelector('.plan-rest-btn')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      if (btn.disabled) return;
+      ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: 2, target: `rest-${assignedLeader.id}` });
+      ctx.store.dispatch({ type: 'REST_LEADER', leaderId: assignedLeader.id });
     });
-    view.appendChild(restSection);
+    leaderSlot.appendChild(restRow);
   }
 
-  // Available initiatives with start buttons
-  const initSection = document.createElement('section');
-  initSection.className = 'plan-section';
-  initSection.innerHTML = `<h2 class="section-heading">Available Initiatives</h2>`;
+  column.appendChild(leaderSlot);
 
-  // Already active initiative IDs
-  const activeIds = new Set(state.activeInitiatives.map((i) => i.definitionId));
+  // Initiative cards
+  const initList = document.createElement('div');
+  initList.className = 'plan-initiatives';
 
-  // Seed-based RNG for initiative selection — same seed+week = same offerings
-  const initRng = createSeededRandom(state.seed * 1000 + state.turn.week);
+  // Get and filter initiatives for this department
+  const allDeptInits = registry.getInitiatives(dept.id);
+  const eligible = allDeptInits.filter((init: { id: string; tags: string[] }) => {
+    if (activeIds.has(init.id)) return true;
+    if (init.tags.includes('week-1')) return true;
+    return state.turn.week >= 3;
+  });
+  const activeForDept = eligible.filter((i: { id: string }) => activeIds.has(i.id));
+  const available = eligible.filter((i: { id: string }) => !activeIds.has(i.id));
+  const shuffled = initRng.shuffle(available);
+  const deptInits = [...activeForDept, ...shuffled.slice(0, 3)];
 
-  for (const dept of departments) {
-    const allDeptInits = registry.getInitiatives(dept.id);
-    // Gate by week tags, then randomly select a subset for variety
-    const eligible = allDeptInits.filter((init) => {
-      // Already active initiatives are always shown
-      if (activeIds.has(init.id)) return true;
-      if (init.tags.includes('week-1')) return true;
-      return state.turn.week >= 3;
-    });
-    // Show max 3 per department (plus any already active)
-    const activeForDept = eligible.filter((i) => activeIds.has(i.id));
-    const available = eligible.filter((i) => !activeIds.has(i.id));
-    const shuffled = initRng.shuffle(available);
-    const deptInits = [...activeForDept, ...shuffled.slice(0, 3)];
-    const canAdd = canAddInitiative(state.activeInitiatives, dept.id);
-    const deptLeader = dept.assignedLeaderId;
-    // Low department health increases oversee cost
-    const healthPenalty = dept.health < 40 ? 1 : 0;
+  const canAdd = canAddInitiative(state.activeInitiatives, dept.id);
+  const deptLeader = dept.assignedLeaderId;
+  const healthPenalty = dept.health < 40 ? 1 : 0;
 
-    for (const init of deptInits) {
-      const isActive = activeIds.has(init.id);
-      const meetsResources = canStartInitiative(state.resources, init.requiredResources);
-      const canStart = !isActive && canAdd && meetsResources;
+  if (deptInits.length === 0) {
+    initList.innerHTML = '<div class="plan-empty">No initiatives available</div>';
+  }
 
-      const card = document.createElement('div');
-      card.className = `initiative-card ${isActive ? 'initiative-card--active' : ''} ${!canStart && !isActive ? 'initiative-card--disabled' : ''}`;
+  for (const init of deptInits) {
+    const isActive = activeIds.has(init.id);
+    const meetsResources = canStartInitiative(state.resources, init.requiredResources);
+    const canStart = !isActive && canAdd && meetsResources;
 
-      // Requirements display — always visible
-      const reqEntries = Object.entries(init.requiredResources).filter(([, v]) => v !== undefined && v > 0);
-      const reqHtml = reqEntries.length > 0
-        ? `<div class="init-requires">
-            <span class="init-requires-label">Requires:</span>
-            ${reqEntries.map(([key, val]) => {
-              const current = state.resources[key as keyof typeof state.resources];
-              const met = current >= (val as number);
-              return `<span class="init-req ${met ? 'init-req--met' : 'init-req--unmet'}">${key} ${val} ${met ? '&#10003;' : `(have ${current})`}</span>`;
-            }).join('')}
-          </div>`
-        : '';
+    const card = document.createElement('div');
+    card.className = `plan-init-card ${isActive ? 'plan-init-card--active' : ''} ${!canStart && !isActive ? 'plan-init-card--disabled' : ''}`;
 
-      // Outcome preview — show what you get for oversee vs delegate
-      const overseeEffects = Object.entries(init.outcomeOverseen.resourceEffects)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
-        .join(' ');
-      const delegateEffects = Object.entries(init.outcomeDelegated.resourceEffects)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
-        .join(' ');
+    // Requirements
+    const reqEntries = Object.entries(init.requiredResources).filter(([, v]) => v !== undefined && (v as number) > 0);
+    const reqHtml = reqEntries.length > 0
+      ? `<div class="init-requires">
+          ${reqEntries.map(([key, val]) => {
+            const current = state.resources[key as keyof typeof state.resources];
+            const met = current >= (val as number);
+            return `<span class="init-req ${met ? 'init-req--met' : 'init-req--unmet'}">${key} ${val}${met ? ' ✓' : ''}</span>`;
+          }).join('')}
+        </div>`
+      : '';
 
-      const outcomeHtml = `
-        <div class="init-outcomes">
-          <div class="init-outcome-row">
-            <span class="init-outcome-label">Overseen:</span>
-            <span class="init-outcome-effects">${overseeEffects}</span>
-          </div>
-          <div class="init-outcome-row">
-            <span class="init-outcome-label">Delegated:</span>
-            <span class="init-outcome-effects">${delegateEffects} <span class="init-outcome-note">(varies by leader)</span></span>
-          </div>
+    // Outcomes (shown on expand)
+    const overseeEffects = Object.entries(init.outcomeOverseen.resourceEffects)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
+      .join(' ');
+    const delegateEffects = Object.entries(init.outcomeDelegated.resourceEffects)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
+      .join(' ');
+
+    // Action buttons or status
+    let actionsHtml = '';
+    if (isActive) {
+      actionsHtml = '<span class="init-status init-status--active">In Progress</span>';
+    } else if (!canAdd) {
+      actionsHtml = '<span class="init-status init-status--full">Dept Full</span>';
+    } else if (!meetsResources) {
+      actionsHtml = '<span class="init-status init-status--blocked">Insufficient</span>';
+    } else {
+      const overseeCost = init.attentionCost + healthPenalty;
+      actionsHtml = `
+        <div class="plan-init-actions">
+          <button class="btn-primary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="true" data-cost="${overseeCost}">
+            Oversee ${overseeCost}A
+          </button>
+          <button class="btn-secondary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="false" data-leader="${deptLeader || ''}" data-cost="0">
+            Delegate
+          </button>
         </div>
       `;
-
-      // Action buttons
-      let statusHtml = '';
-      if (isActive) {
-        statusHtml = `<span class="init-status init-status--active">In Progress</span>`;
-      } else if (!canAdd) {
-        statusHtml = `<span class="init-status init-status--full">Dept Full (2/2)</span>`;
-      } else if (!meetsResources) {
-        statusHtml = `<span class="init-status init-status--blocked">Insufficient resources</span>`;
-      } else {
-        const overseeCost = init.attentionCost + healthPenalty;
-        const penaltyNote = healthPenalty > 0 ? ' +1 low health' : '';
-        statusHtml = `
-          <div class="init-actions">
-            <button class="btn-primary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="true" data-cost="${overseeCost}">
-              Oversee (${overseeCost} ATT${penaltyNote})
-            </button>
-            <button class="btn-secondary init-start-btn" data-init="${init.id}" data-dept="${init.department}" data-dur="${init.duration}" data-oversee="false" data-leader="${deptLeader || ''}" data-cost="0">
-              Delegate${deptLeader ? '' : ' (no leader)'}
-            </button>
-          </div>
-        `;
-      }
-
-      card.innerHTML = `
-        <div class="init-header">
-          <span class="init-name">${init.name}</span>
-          <span class="init-cost">${init.attentionCost} ATT · ${init.duration}w</span>
-        </div>
-        <p class="init-desc">${init.description}</p>
-        ${reqHtml}
-        ${outcomeHtml}
-        <div class="init-footer">
-          <span class="init-dept">${formatDeptName(init.department)}</span>
-          ${statusHtml}
-        </div>
-      `;
-      initSection.appendChild(card);
     }
+
+    card.innerHTML = `
+      <div class="init-header">
+        <span class="init-name">${init.name}</span>
+        <span class="init-cost">${init.attentionCost}A · ${init.duration}w</span>
+      </div>
+      <p class="plan-init-desc">${init.description}</p>
+      ${reqHtml}
+      <div class="plan-init-outcomes">
+        <div class="init-outcome-row">
+          <span class="init-outcome-label">Overseen:</span>
+          <span class="init-outcome-effects">${overseeEffects}</span>
+        </div>
+        <div class="init-outcome-row">
+          <span class="init-outcome-label">Delegated:</span>
+          <span class="init-outcome-effects">${delegateEffects}</span>
+        </div>
+      </div>
+      ${actionsHtml}
+    `;
+
+    // Expand/collapse on card click (except buttons)
+    if (!isActive) {
+      card.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.init-start-btn')) return;
+        const wasExpanded = card.classList.contains('plan-init-card--expanded');
+        // Collapse siblings
+        initList.querySelectorAll('.plan-init-card--expanded').forEach((c) => c.classList.remove('plan-init-card--expanded'));
+        if (!wasExpanded) card.classList.add('plan-init-card--expanded');
+      });
+    }
+
+    initList.appendChild(card);
   }
 
-  // Initiative start handler
-  initSection.addEventListener('click', (e) => {
+  // Initiative start handler (delegated to list)
+  initList.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.init-start-btn') as HTMLElement | null;
     if (!btn) return;
+    e.stopPropagation();
 
     const initId = btn.dataset.init!;
     const deptId = btn.dataset.dept!;
@@ -217,7 +254,6 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
     const cost = parseInt(btn.dataset.cost!, 10);
     const leaderId = btn.dataset.leader || null;
 
-    // Spend attention for overseen initiatives
     if (overseen && cost > 0) {
       ctx.store.dispatch({ type: 'SPEND_ATTENTION', amount: cost, target: initId });
     }
@@ -232,18 +268,8 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
     });
   });
 
-  view.appendChild(initSection);
-
-  // Confirm plan button
-  const confirmBtn = document.createElement('button');
-  confirmBtn.className = 'btn-primary advance-btn';
-  confirmBtn.textContent = 'Confirm Plan';
-  confirmBtn.addEventListener('click', () => {
-    ctx.store.dispatch({ type: 'ADVANCE_PHASE' });
-  });
-  view.appendChild(confirmBtn);
-
-  container.appendChild(view);
+  column.appendChild(initList);
+  return column;
 }
 
 function formatDeptName(id: string): string {
