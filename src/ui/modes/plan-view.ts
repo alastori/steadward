@@ -129,17 +129,50 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
       const card = document.createElement('div');
       card.className = `initiative-card ${isActive ? 'initiative-card--active' : ''} ${!canStart && !isActive ? 'initiative-card--disabled' : ''}`;
 
+      // Requirements display — always visible
+      const reqEntries = Object.entries(init.requiredResources).filter(([, v]) => v !== undefined && v > 0);
+      const reqHtml = reqEntries.length > 0
+        ? `<div class="init-requires">
+            <span class="init-requires-label">Requires:</span>
+            ${reqEntries.map(([key, val]) => {
+              const current = state.resources[key as keyof typeof state.resources];
+              const met = current >= (val as number);
+              return `<span class="init-req ${met ? 'init-req--met' : 'init-req--unmet'}">${key} ${val} ${met ? '&#10003;' : `(have ${current})`}</span>`;
+            }).join('')}
+          </div>`
+        : '';
+
+      // Outcome preview — show what you get for oversee vs delegate
+      const overseeEffects = Object.entries(init.outcomeOverseen.resourceEffects)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
+        .join(' ');
+      const delegateEffects = Object.entries(init.outcomeDelegated.resourceEffects)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => `<span class="${(v as number) >= 0 ? 'effect-pos' : 'effect-neg'}">${(v as number) >= 0 ? '+' : ''}${v} ${k}</span>`)
+        .join(' ');
+
+      const outcomeHtml = `
+        <div class="init-outcomes">
+          <div class="init-outcome-row">
+            <span class="init-outcome-label">Overseen:</span>
+            <span class="init-outcome-effects">${overseeEffects}</span>
+          </div>
+          <div class="init-outcome-row">
+            <span class="init-outcome-label">Delegated:</span>
+            <span class="init-outcome-effects">${delegateEffects} <span class="init-outcome-note">(varies by leader)</span></span>
+          </div>
+        </div>
+      `;
+
+      // Action buttons
       let statusHtml = '';
       if (isActive) {
         statusHtml = `<span class="init-status init-status--active">In Progress</span>`;
       } else if (!canAdd) {
         statusHtml = `<span class="init-status init-status--full">Dept Full (2/2)</span>`;
       } else if (!meetsResources) {
-        const missing = Object.entries(init.requiredResources)
-          .filter(([key, val]) => val !== undefined && state.resources[key as keyof typeof state.resources] < val)
-          .map(([key]) => key)
-          .join(', ');
-        statusHtml = `<span class="init-status init-status--blocked">Need: ${missing}</span>`;
+        statusHtml = `<span class="init-status init-status--blocked">Insufficient resources</span>`;
       } else {
         const overseeCost = init.attentionCost + healthPenalty;
         const penaltyNote = healthPenalty > 0 ? ' +1 low health' : '';
@@ -161,6 +194,8 @@ export function renderPlanView(container: HTMLElement, ctx: RenderContext): void
           <span class="init-cost">${init.attentionCost} ATT · ${init.duration}w</span>
         </div>
         <p class="init-desc">${init.description}</p>
+        ${reqHtml}
+        ${outcomeHtml}
         <div class="init-footer">
           <span class="init-dept">${formatDeptName(init.department)}</span>
           ${statusHtml}
